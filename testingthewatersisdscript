@@ -1,5 +1,5 @@
 task.spawn(function()
-    print("[AutoFarm Script] Initializing execution...")
+    print("[AutoFarm Script] Initializing execution with redesigned UI...")
 end)
 
 local success, err = pcall(function()
@@ -340,7 +340,7 @@ local success, err = pcall(function()
         return nil, nil
     end
 
-   -- Position Locking Loop with Below-Ground Hover Fallback
+    -- Position Locking Loop with Below-Ground Hover Fallback
     RunService.Heartbeat:Connect(function()
         if not FarmSettings.AutoFarm then return end
 
@@ -441,7 +441,7 @@ local success, err = pcall(function()
         end
     end)
 
-    -- GUI SETUP
+    -- ENHANCED DESIGNED GUI SETUP
     local parentGui = nil
     pcall(function() parentGui = game:GetService("CoreGui") end)
     if not parentGui then parentGui = LocalPlayer:WaitForChild("PlayerGui") end
@@ -454,76 +454,116 @@ local success, err = pcall(function()
     screenGui.ResetOnSpawn = false
     screenGui.Parent = parentGui
 
-    -- Restore Button
+    -- Helper Function for Click Bounce Scale Animation
+    local function addClickBounce(instance)
+        local scale = instance:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+        scale.Parent = instance
+
+        instance.MouseButton1Down:Connect(function()
+            TweenService:Create(scale, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 0.94}):Play()
+        end)
+        instance.MouseButton1Up:Connect(function()
+            TweenService:Create(scale, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        end)
+        instance.MouseLeave:Connect(function()
+            TweenService:Create(scale, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        end)
+    end
+
+    -- Restore Float Button
     local restoreBtn = Instance.new("ImageButton")
-    restoreBtn.Size = UDim2.new(0, 45, 0, 45)
-    restoreBtn.Position = UDim2.new(0.02, 0, 0.5, -22)
-    restoreBtn.BackgroundColor3 = Color3.fromRGB(38, 28, 26)
+    restoreBtn.Size = UDim2.new(0, 52, 0, 52)
+    restoreBtn.Position = UDim2.new(0.02, 0, 0.5, -26)
+    restoreBtn.BackgroundColor3 = Color3.fromRGB(24, 20, 26)
     restoreBtn.BorderSizePixel = 0
-    restoreBtn.Visible = false
+    restoreBtn.Visible = FarmSettings.AutoHideUi
     restoreBtn.Active = true
     restoreBtn.Draggable = true
     restoreBtn.Parent = screenGui
 
     local restoreCorner = Instance.new("UICorner")
-    restoreCorner.CornerRadius = UDim.new(0, 10)
+    restoreCorner.CornerRadius = UDim.new(0, 14)
     restoreCorner.Parent = restoreBtn
 
     local restoreStroke = Instance.new("UIStroke")
-    restoreStroke.Color = Color3.fromRGB(215, 95, 50)
-    restoreStroke.Thickness = 1.5
+    restoreStroke.Color = Color3.fromRGB(255, 115, 45)
+    restoreStroke.Thickness = 2
+    restoreStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     restoreStroke.Parent = restoreBtn
 
     local restoreLabel = Instance.new("TextLabel")
     restoreLabel.Size = UDim2.new(1, 0, 1, 0)
     restoreLabel.BackgroundTransparency = 1
     restoreLabel.Text = "⚔️"
-    restoreLabel.TextSize = 22
+    restoreLabel.TextSize = 24
     restoreLabel.Parent = restoreBtn
 
-    -- Main Frame
+    addClickBounce(restoreBtn)
+
+    -- EXPANDED DESIGNED MAIN FRAME (620 x 380)
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 520, 0, 310)
-    mainFrame.Position = UDim2.new(0.5, -260, 0.5, -155)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(38, 28, 26)
+    mainFrame.Size = UDim2.new(0, 620, 0, 380)
+    mainFrame.Position = UDim2.new(0.5, -310, 0.5, -190)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(18, 16, 20)
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
+    mainFrame.Visible = not FarmSettings.AutoHideUi
+    mainFrame.ClipsDescendants = false
     mainFrame.Parent = screenGui
 
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.CornerRadius = UDim.new(0, 12)
     mainCorner.Parent = mainFrame
 
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Color = Color3.fromRGB(45, 38, 50)
+    mainStroke.Thickness = 1.5
+    mainStroke.Parent = mainFrame
+
+    -- Main Frame Gradient Backdrop
+    local mainGrad = Instance.new("UIGradient")
+    mainGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 20, 26)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 12, 16))
+    })
+    mainGrad.Rotation = 45
+    mainGrad.Parent = mainFrame
+
+    -- Control Window Buttons
     local minimizeBtn = Instance.new("TextButton")
-    minimizeBtn.Size = UDim2.new(0, 24, 0, 24)
-    minimizeBtn.Position = UDim2.new(1, -58, 0, 8)
-    minimizeBtn.BackgroundColor3 = Color3.fromRGB(48, 36, 34)
+    minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
+    minimizeBtn.Position = UDim2.new(1, -66, 0, 10)
+    minimizeBtn.BackgroundColor3 = Color3.fromRGB(32, 28, 36)
     minimizeBtn.Text = "─"
-    minimizeBtn.TextColor3 = Color3.fromRGB(180, 170, 165)
+    minimizeBtn.TextColor3 = Color3.fromRGB(200, 190, 205)
     minimizeBtn.Font = Enum.Font.GothamBold
-    minimizeBtn.TextSize = 12
+    minimizeBtn.TextSize = 13
     minimizeBtn.ZIndex = 10
     minimizeBtn.Parent = mainFrame
 
     local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 6)
+    minCorner.CornerRadius = UDim.new(0, 8)
     minCorner.Parent = minimizeBtn
 
+    addClickBounce(minimizeBtn)
+
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 24, 0, 24)
-    closeBtn.Position = UDim2.new(1, -30, 0, 8)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(180, 45, 55)
+    closeBtn.Size = UDim2.new(0, 28, 0, 28)
+    closeBtn.Position = UDim2.new(1, -34, 0, 10)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(210, 50, 65)
     closeBtn.Text = "✕"
     closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 11
+    closeBtn.TextSize = 12
     closeBtn.ZIndex = 10
     closeBtn.Parent = mainFrame
 
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.CornerRadius = UDim.new(0, 8)
     closeCorner.Parent = closeBtn
+
+    addClickBounce(closeBtn)
 
     local function toggleUI()
         mainFrame.Visible = not mainFrame.Visible
@@ -534,20 +574,30 @@ local success, err = pcall(function()
     restoreBtn.MouseButton1Click:Connect(toggleUI)
     closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
 
-    -- Sidebar & Right Area
+    -- Sidebar Layout
     local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, 130, 1, 0)
-    sidebar.BackgroundColor3 = Color3.fromRGB(30, 22, 20)
+    sidebar.Size = UDim2.new(0, 150, 1, 0)
+    sidebar.BackgroundColor3 = Color3.fromRGB(14, 12, 16)
     sidebar.BorderSizePixel = 0
     sidebar.Parent = mainFrame
 
     local sidebarCorner = Instance.new("UICorner")
-    sidebarCorner.CornerRadius = UDim.new(0, 10)
+    sidebarCorner.CornerRadius = UDim.new(0, 12)
     sidebarCorner.Parent = sidebar
 
+    local brandTitle = Instance.new("TextLabel")
+    brandTitle.Size = UDim2.new(1, 0, 0, 48)
+    brandTitle.Position = UDim2.new(0, 0, 0, 6)
+    brandTitle.BackgroundTransparency = 1
+    brandTitle.Text = "⚡ AUTOFARM"
+    brandTitle.TextColor3 = Color3.fromRGB(255, 125, 45)
+    brandTitle.Font = Enum.Font.GothamBold
+    brandTitle.TextSize = 15
+    brandTitle.Parent = sidebar
+
     local tabList = Instance.new("Frame")
-    tabList.Size = UDim2.new(1, 0, 1, -50)
-    tabList.Position = UDim2.new(0, 0, 0, 45)
+    tabList.Size = UDim2.new(1, 0, 1, -60)
+    tabList.Position = UDim2.new(0, 0, 0, 55)
     tabList.BackgroundTransparency = 1
     tabList.Parent = sidebar
 
@@ -557,42 +607,42 @@ local success, err = pcall(function()
     tabLayout.Parent = tabList
 
     local contentFrame = Instance.new("Frame")
-    contentFrame.Size = UDim2.new(1, -140, 1, 0)
-    contentFrame.Position = UDim2.new(0, 135, 0, 0)
+    contentFrame.Size = UDim2.new(1, -165, 1, 0)
+    contentFrame.Position = UDim2.new(0, 160, 0, 0)
     contentFrame.BackgroundTransparency = 1
     contentFrame.Parent = mainFrame
 
     local headerTitle = Instance.new("TextLabel")
-    headerTitle.Size = UDim2.new(1, -70, 0, 30)
-    headerTitle.Position = UDim2.new(0, 10, 0, 8)
+    headerTitle.Size = UDim2.new(1, -80, 0, 28)
+    headerTitle.Position = UDim2.new(0, 10, 0, 12)
     headerTitle.BackgroundTransparency = 1
     headerTitle.Text = "Main"
-    headerTitle.TextColor3 = Color3.fromRGB(245, 235, 230)
+    headerTitle.TextColor3 = Color3.fromRGB(250, 245, 255)
     headerTitle.Font = Enum.Font.GothamBold
-    headerTitle.TextSize = 20
+    headerTitle.TextSize = 22
     headerTitle.TextXAlignment = Enum.TextXAlignment.Left
     headerTitle.Parent = contentFrame
 
     local subTitle = Instance.new("TextLabel")
-    subTitle.Size = UDim2.new(1, -70, 0, 20)
-    subTitle.Position = UDim2.new(0, 10, 0, 38)
+    subTitle.Size = UDim2.new(1, -80, 0, 18)
+    subTitle.Position = UDim2.new(0, 10, 0, 40)
     subTitle.BackgroundTransparency = 1
-    subTitle.Text = "Farm"
-    subTitle.TextColor3 = Color3.fromRGB(235, 225, 220)
-    subTitle.Font = Enum.Font.GothamBold
-    subTitle.TextSize = 14
+    subTitle.Text = "Farm Settings & Attack Automation"
+    subTitle.TextColor3 = Color3.fromRGB(150, 140, 160)
+    subTitle.Font = Enum.Font.GothamMedium
+    subTitle.TextSize = 12
     subTitle.TextXAlignment = Enum.TextXAlignment.Left
     subTitle.Parent = contentFrame
 
     local pages = {}
     local function createPage(name)
         local page = Instance.new("ScrollingFrame")
-        page.Size = UDim2.new(1, -15, 1, -65)
-        page.Position = UDim2.new(0, 10, 0, 60)
+        page.Size = UDim2.new(1, -15, 1, -70)
+        page.Position = UDim2.new(0, 10, 0, 65)
         page.BackgroundTransparency = 1
         page.BorderSizePixel = 0
-        page.ScrollBarThickness = 3
-        page.ScrollBarImageColor3 = Color3.fromRGB(80, 60, 55)
+        page.ScrollBarThickness = 4
+        page.ScrollBarImageColor3 = Color3.fromRGB(255, 115, 45)
         page.CanvasSize = UDim2.new(0, 0, 0, 0)
         page.AutomaticCanvasSize = Enum.AutomaticSize.Y
         page.Visible = false
@@ -616,44 +666,49 @@ local success, err = pcall(function()
     -- UI Builders
     local function addTitle(parent, text)
         local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, -6, 0, 24)
+        titleLabel.Size = UDim2.new(1, -6, 0, 26)
         titleLabel.BackgroundTransparency = 1
-        titleLabel.Text = text
-        titleLabel.TextColor3 = Color3.fromRGB(245, 235, 230)
+        titleLabel.Text = text:upper()
+        titleLabel.TextColor3 = Color3.fromRGB(255, 135, 55)
         titleLabel.Font = Enum.Font.GothamBold
-        titleLabel.TextSize = 15
+        titleLabel.TextSize = 12
         titleLabel.TextXAlignment = Enum.TextXAlignment.Left
         titleLabel.Parent = parent
     end
 
     local function addToggle(parent, title, toggleKey, defaultState, subDesc, callback)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, -6, 0, 42)
-        row.BackgroundColor3 = Color3.fromRGB(45, 34, 32)
+        row.Size = UDim2.new(1, -6, 0, 46)
+        row.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
         row.Parent = parent
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 6)
+        rowCorner.CornerRadius = UDim.new(0, 8)
         rowCorner.Parent = row
+
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(40, 34, 46)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
 
         local rowLabel = Instance.new("TextLabel")
         rowLabel.Size = subDesc and UDim2.new(1, -70, 0, 20) or UDim2.new(1, -70, 1, 0)
-        rowLabel.Position = subDesc and UDim2.new(0, 12, 0, 4) or UDim2.new(0, 12, 0, 0)
+        rowLabel.Position = subDesc and UDim2.new(0, 14, 0, 5) or UDim2.new(0, 14, 0, 0)
         rowLabel.BackgroundTransparency = 1
         rowLabel.Text = title
-        rowLabel.TextColor3 = Color3.fromRGB(220, 210, 205)
+        rowLabel.TextColor3 = Color3.fromRGB(235, 230, 240)
         rowLabel.Font = Enum.Font.GothamMedium
-        rowLabel.TextSize = 12
+        rowLabel.TextSize = 13
         rowLabel.TextXAlignment = Enum.TextXAlignment.Left
         rowLabel.Parent = row
 
         if subDesc then
             local subLabel = Instance.new("TextLabel")
             subLabel.Size = UDim2.new(1, -70, 0, 16)
-            subLabel.Position = UDim2.new(0, 12, 0, 22)
+            subLabel.Position = UDim2.new(0, 14, 0, 24)
             subLabel.BackgroundTransparency = 1
             subLabel.Text = subDesc
-            subLabel.TextColor3 = Color3.fromRGB(140, 130, 125)
+            subLabel.TextColor3 = Color3.fromRGB(140, 130, 150)
             subLabel.Font = Enum.Font.Gotham
             subLabel.TextSize = 10
             subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -661,9 +716,9 @@ local success, err = pcall(function()
         end
 
         local switchBg = Instance.new("TextButton")
-        switchBg.Size = UDim2.new(0, 42, 0, 20)
-        switchBg.Position = UDim2.new(1, -50, 0.5, -10)
-        switchBg.BackgroundColor3 = defaultState and Color3.fromRGB(200, 90, 50) or Color3.fromRGB(30, 25, 25)
+        switchBg.Size = UDim2.new(0, 46, 0, 22)
+        switchBg.Position = UDim2.new(1, -56, 0.5, -11)
+        switchBg.BackgroundColor3 = defaultState and Color3.fromRGB(255, 115, 45) or Color3.fromRGB(38, 32, 44)
         switchBg.Text = ""
         switchBg.Parent = row
 
@@ -672,9 +727,9 @@ local success, err = pcall(function()
         switchCorner.Parent = switchBg
 
         local knob = Instance.new("Frame")
-        knob.Size = UDim2.new(0, 14, 0, 14)
-        knob.Position = defaultState and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-        knob.BackgroundColor3 = defaultState and Color3.fromRGB(30, 22, 20) or Color3.fromRGB(120, 110, 105)
+        knob.Size = UDim2.new(0, 16, 0, 16)
+        knob.Position = defaultState and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         knob.BorderSizePixel = 0
         knob.Parent = switchBg
 
@@ -686,12 +741,11 @@ local success, err = pcall(function()
 
         local function updateVisual(state)
             toggled = state
-            local targetPos = toggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
-            local targetBg = toggled and Color3.fromRGB(200, 90, 50) or Color3.fromRGB(30, 25, 25)
-            local targetKnob = toggled and Color3.fromRGB(30, 22, 20) or Color3.fromRGB(120, 110, 105)
+            local targetPos = toggled and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            local targetBg = toggled and Color3.fromRGB(255, 115, 45) or Color3.fromRGB(38, 32, 44)
 
-            TweenService:Create(knob, TweenInfo.new(0.15), {Position = targetPos, BackgroundColor3 = targetKnob}):Play()
-            TweenService:Create(switchBg, TweenInfo.new(0.15), {BackgroundColor3 = targetBg}):Play()
+            TweenService:Create(knob, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+            TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = targetBg}):Play()
         end
 
         if toggleKey then
@@ -703,68 +757,85 @@ local success, err = pcall(function()
             updateVisual(toggled)
             if callback then callback(toggled) end
         end)
+
+        addClickBounce(switchBg)
     end
 
     local function addRefreshableDropdown(parent, title, dropdownKey, optionsProvider, defaultSelected, callback)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, -6, 0, 42)
-        row.BackgroundColor3 = Color3.fromRGB(45, 34, 32)
+        row.Size = UDim2.new(1, -6, 0, 46)
+        row.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
         row.ClipsDescendants = false
         row.Parent = parent
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 6)
+        rowCorner.CornerRadius = UDim.new(0, 8)
         rowCorner.Parent = row
 
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(40, 34, 46)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
+
         local rowLabel = Instance.new("TextLabel")
-        rowLabel.Size = UDim2.new(0.45, 0, 0, 42)
-        rowLabel.Position = UDim2.new(0, 12, 0, 0)
+        rowLabel.Size = UDim2.new(0.45, 0, 0, 46)
+        rowLabel.Position = UDim2.new(0, 14, 0, 0)
         rowLabel.BackgroundTransparency = 1
         rowLabel.Text = title
-        rowLabel.TextColor3 = Color3.fromRGB(220, 210, 205)
+        rowLabel.TextColor3 = Color3.fromRGB(235, 230, 240)
         rowLabel.Font = Enum.Font.GothamMedium
-        rowLabel.TextSize = 12
+        rowLabel.TextSize = 13
         rowLabel.TextXAlignment = Enum.TextXAlignment.Left
         rowLabel.Parent = row
 
         local dropBtn = Instance.new("TextButton")
-        dropBtn.Size = UDim2.new(0, 140, 0, 28)
-        dropBtn.Position = UDim2.new(1, -148, 0, 7)
-        dropBtn.BackgroundColor3 = Color3.fromRGB(35, 26, 25)
+        dropBtn.Size = UDim2.new(0, 160, 0, 30)
+        dropBtn.Position = UDim2.new(1, -170, 0, 8)
+        dropBtn.BackgroundColor3 = Color3.fromRGB(18, 15, 22)
         dropBtn.Text = "  " .. defaultSelected
-        dropBtn.TextColor3 = Color3.fromRGB(210, 200, 195)
+        dropBtn.TextColor3 = Color3.fromRGB(220, 210, 230)
         dropBtn.Font = Enum.Font.Gotham
         dropBtn.TextSize = 11
         dropBtn.TextXAlignment = Enum.TextXAlignment.Left
         dropBtn.Parent = row
 
         local dropCorner = Instance.new("UICorner")
-        dropCorner.CornerRadius = UDim.new(0, 5)
+        dropCorner.CornerRadius = UDim.new(0, 6)
         dropCorner.Parent = dropBtn
+
+        local dropStroke = Instance.new("UIStroke")
+        dropStroke.Color = Color3.fromRGB(45, 38, 52)
+        dropStroke.Thickness = 1
+        dropStroke.Parent = dropBtn
 
         local arrowIcon = Instance.new("TextLabel")
         arrowIcon.Size = UDim2.new(0, 20, 1, 0)
         arrowIcon.Position = UDim2.new(1, -22, 0, 0)
         arrowIcon.BackgroundTransparency = 1
         arrowIcon.Text = "⌃"
-        arrowIcon.TextColor3 = Color3.fromRGB(180, 170, 165)
+        arrowIcon.TextColor3 = Color3.fromRGB(180, 170, 190)
         arrowIcon.TextSize = 12
         arrowIcon.Parent = dropBtn
 
         local optionContainer = Instance.new("ScrollingFrame")
-        optionContainer.Size = UDim2.new(0, 140, 0, 0)
-        optionContainer.Position = UDim2.new(1, -148, 0, 38)
-        optionContainer.BackgroundColor3 = Color3.fromRGB(30, 22, 21)
+        optionContainer.Size = UDim2.new(0, 160, 0, 0)
+        optionContainer.Position = UDim2.new(1, -170, 0, 42)
+        optionContainer.BackgroundColor3 = Color3.fromRGB(20, 17, 24)
         optionContainer.BorderSizePixel = 0
         optionContainer.ScrollBarThickness = 3
-        optionContainer.ScrollBarImageColor3 = Color3.fromRGB(80, 60, 55)
+        optionContainer.ScrollBarImageColor3 = Color3.fromRGB(255, 115, 45)
         optionContainer.Visible = false
         optionContainer.ZIndex = 20
         optionContainer.Parent = row
 
         local optCorner = Instance.new("UICorner")
-        optCorner.CornerRadius = UDim.new(0, 5)
+        optCorner.CornerRadius = UDim.new(0, 6)
         optCorner.Parent = optionContainer
+
+        local optStroke = Instance.new("UIStroke")
+        optStroke.Color = Color3.fromRGB(55, 45, 65)
+        optStroke.Thickness = 1
+        optStroke.Parent = optionContainer
 
         local optLayout = Instance.new("UIListLayout")
         optLayout.Parent = optionContainer
@@ -783,18 +854,18 @@ local success, err = pcall(function()
             end
 
             local options = optionsProvider()
-            local maxDisplayHeight = math.min(#options * 24, 120)
-            optionContainer.CanvasSize = UDim2.new(0, 0, 0, #options * 24)
-            optionContainer.Size = UDim2.new(0, 140, 0, maxDisplayHeight)
+            local maxDisplayHeight = math.min(#options * 26, 130)
+            optionContainer.CanvasSize = UDim2.new(0, 0, 0, #options * 26)
+            optionContainer.Size = UDim2.new(0, 160, 0, maxDisplayHeight)
 
             for _, optText in ipairs(options) do
                 local optBtn = Instance.new("TextButton")
-                optBtn.Size = UDim2.new(1, 0, 0, 24)
+                optBtn.Size = UDim2.new(1, 0, 0, 26)
                 optBtn.BackgroundTransparency = 1
                 optBtn.Text = "  " .. optText
-                optBtn.TextColor3 = Color3.fromRGB(180, 170, 165)
+                optBtn.TextColor3 = Color3.fromRGB(190, 180, 200)
                 optBtn.Font = Enum.Font.Gotham
-                optBtn.TextSize = 10
+                optBtn.TextSize = 11
                 optBtn.TextXAlignment = Enum.TextXAlignment.Left
                 optBtn.ZIndex = 21
                 optBtn.Parent = optionContainer
@@ -802,7 +873,7 @@ local success, err = pcall(function()
                 optBtn.MouseButton1Click:Connect(function()
                     dropBtn.Text = "  " .. optText
                     isOpen = false
-                    row.Size = UDim2.new(1, -6, 0, 42)
+                    row.Size = UDim2.new(1, -6, 0, 46)
                     optionContainer.Visible = false
                     arrowIcon.Text = "⌃"
                     if callback then callback(optText) end
@@ -815,16 +886,18 @@ local success, err = pcall(function()
             if isOpen then
                 refreshDropdownOptions()
                 local options = optionsProvider()
-                local maxDisplayHeight = math.min(#options * 24, 120)
-                row.Size = UDim2.new(1, -6, 0, 42 + maxDisplayHeight + 6)
+                local maxDisplayHeight = math.min(#options * 26, 130)
+                row.Size = UDim2.new(1, -6, 0, 46 + maxDisplayHeight + 8)
                 optionContainer.Visible = true
                 arrowIcon.Text = "⌄"
             else
-                row.Size = UDim2.new(1, -6, 0, 42)
+                row.Size = UDim2.new(1, -6, 0, 46)
                 optionContainer.Visible = false
                 arrowIcon.Text = "⌃"
             end
         end)
+
+        addClickBounce(dropBtn)
 
         return { Refresh = refreshDropdownOptions }
     end
@@ -835,22 +908,27 @@ local success, err = pcall(function()
 
     local function addActionBtn(parent, title, clickCallback, subDesc)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, -6, 0, 42)
-        row.BackgroundColor3 = Color3.fromRGB(45, 34, 32)
+        row.Size = UDim2.new(1, -6, 0, 46)
+        row.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
         row.Parent = parent
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 6)
+        rowCorner.CornerRadius = UDim.new(0, 8)
         rowCorner.Parent = row
 
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(40, 34, 46)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
+
         local rowLabel = Instance.new("TextLabel")
-        rowLabel.Size = subDesc and UDim2.new(0.8, 0, 0, 20) or UDim2.new(0.8, 0, 1, 0)
-        rowLabel.Position = subDesc and UDim2.new(0, 12, 0, 4) or UDim2.new(0, 12, 0, 0)
+        rowLabel.Size = subDesc and UDim2.new(0.8, 0, 0, 22) or UDim2.new(0.8, 0, 1, 0)
+        rowLabel.Position = subDesc and UDim2.new(0, 14, 0, 5) or UDim2.new(0, 14, 0, 0)
         rowLabel.BackgroundTransparency = 1
         rowLabel.Text = title
-        rowLabel.TextColor3 = Color3.fromRGB(220, 210, 205)
+        rowLabel.TextColor3 = Color3.fromRGB(235, 230, 240)
         rowLabel.Font = Enum.Font.GothamMedium
-        rowLabel.TextSize = 12
+        rowLabel.TextSize = 13
         rowLabel.TextXAlignment = Enum.TextXAlignment.Left
         rowLabel.Parent = row
 
@@ -858,10 +936,10 @@ local success, err = pcall(function()
             local subLabel = Instance.new("TextLabel")
             subLabel.Name = "SubDescLabel"
             subLabel.Size = UDim2.new(0.8, 0, 0, 16)
-            subLabel.Position = UDim2.new(0, 12, 0, 22)
+            subLabel.Position = UDim2.new(0, 14, 0, 24)
             subLabel.BackgroundTransparency = 1
             subLabel.Text = subDesc
-            subLabel.TextColor3 = Color3.fromRGB(140, 130, 125)
+            subLabel.TextColor3 = Color3.fromRGB(140, 130, 150)
             subLabel.Font = Enum.Font.Gotham
             subLabel.TextSize = 10
             subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -869,19 +947,25 @@ local success, err = pcall(function()
         end
 
         local actionBtn = Instance.new("TextButton")
-        actionBtn.Size = UDim2.new(0, 30, 0, 26)
-        actionBtn.Position = UDim2.new(1, -38, 0.5, -13)
-        actionBtn.BackgroundTransparency = 1
+        actionBtn.Size = UDim2.new(0, 34, 0, 28)
+        actionBtn.Position = UDim2.new(1, -44, 0.5, -14)
+        actionBtn.BackgroundColor3 = Color3.fromRGB(38, 32, 44)
         actionBtn.Text = "›"
-        actionBtn.TextColor3 = Color3.fromRGB(180, 170, 165)
+        actionBtn.TextColor3 = Color3.fromRGB(255, 125, 45)
         actionBtn.Font = Enum.Font.GothamBold
-        actionBtn.TextSize = 18
+        actionBtn.TextSize = 20
         actionBtn.Parent = row
 
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 6)
+        btnCorner.Parent = actionBtn
+
+        addClickBounce(actionBtn)
+
         actionBtn.MouseButton1Click:Connect(function()
-            TweenService:Create(row, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(75, 55, 50)}):Play()
-            task.delay(0.1, function()
-                TweenService:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 34, 32)}):Play()
+            TweenService:Create(row, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(48, 38, 56)}):Play()
+            task.delay(0.12, function()
+                TweenService:Create(row, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(26, 22, 30)}):Play()
             end)
             if clickCallback then pcall(clickCallback) end
         end)
@@ -889,43 +973,53 @@ local success, err = pcall(function()
 
     local function addInputRow(parent, title, placeholderText, callback)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, -6, 0, 42)
-        row.BackgroundColor3 = Color3.fromRGB(45, 34, 32)
+        row.Size = UDim2.new(1, -6, 0, 46)
+        row.BackgroundColor3 = Color3.fromRGB(26, 22, 30)
         row.Parent = parent
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 6)
+        rowCorner.CornerRadius = UDim.new(0, 8)
         rowCorner.Parent = row
+
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(40, 34, 46)
+        rowStroke.Thickness = 1
+        rowStroke.Parent = row
 
         local rowLabel = Instance.new("TextLabel")
         rowLabel.Size = UDim2.new(0.45, 0, 1, 0)
-        rowLabel.Position = UDim2.new(0, 12, 0, 0)
+        rowLabel.Position = UDim2.new(0, 14, 0, 0)
         rowLabel.BackgroundTransparency = 1
         rowLabel.Text = title
-        rowLabel.TextColor3 = Color3.fromRGB(220, 210, 205)
+        rowLabel.TextColor3 = Color3.fromRGB(235, 230, 240)
         rowLabel.Font = Enum.Font.GothamMedium
-        rowLabel.TextSize = 12
+        rowLabel.TextSize = 13
         rowLabel.TextXAlignment = Enum.TextXAlignment.Left
         rowLabel.Parent = row
 
         local inputContainer = Instance.new("Frame")
-        inputContainer.Size = UDim2.new(0, 140, 0, 28)
-        inputContainer.Position = UDim2.new(1, -148, 0.5, -14)
-        inputContainer.BackgroundColor3 = Color3.fromRGB(35, 26, 25)
+        inputContainer.Size = UDim2.new(0, 160, 0, 30)
+        inputContainer.Position = UDim2.new(1, -170, 0.5, -15)
+        inputContainer.BackgroundColor3 = Color3.fromRGB(18, 15, 22)
         inputContainer.Parent = row
 
         local inputCorner = Instance.new("UICorner")
-        inputCorner.CornerRadius = UDim.new(0, 5)
+        inputCorner.CornerRadius = UDim.new(0, 6)
         inputCorner.Parent = inputContainer
 
+        local inputStroke = Instance.new("UIStroke")
+        inputStroke.Color = Color3.fromRGB(45, 38, 52)
+        inputStroke.Thickness = 1
+        inputStroke.Parent = inputContainer
+
         local textBox = Instance.new("TextBox")
-        textBox.Size = UDim2.new(1, -10, 1, 0)
-        textBox.Position = UDim2.new(0, 5, 0, 0)
+        textBox.Size = UDim2.new(1, -12, 1, 0)
+        textBox.Position = UDim2.new(0, 6, 0, 0)
         textBox.BackgroundTransparency = 1
         textBox.PlaceholderText = placeholderText or ""
-        textBox.PlaceholderColor3 = Color3.fromRGB(130, 120, 115)
+        textBox.PlaceholderColor3 = Color3.fromRGB(110, 100, 120)
         textBox.Text = ""
-        textBox.TextColor3 = Color3.fromRGB(210, 200, 195)
+        textBox.TextColor3 = Color3.fromRGB(230, 220, 240)
         textBox.Font = Enum.Font.Gotham
         textBox.TextSize = 11
         textBox.TextXAlignment = Enum.TextXAlignment.Left
@@ -936,25 +1030,25 @@ local success, err = pcall(function()
         end)
     end
 
-    -- Tab Navigation
+    -- Tab Navigation Setup
     local activeTabBtn = nil
     local function addTab(name, iconText, subTitleText)
         local tabBtn = Instance.new("TextButton")
-        tabBtn.Size = UDim2.new(1, -12, 0, 32)
-        tabBtn.BackgroundColor3 = Color3.fromRGB(44, 32, 30)
-        tabBtn.BackgroundTransparency = 0.6
+        tabBtn.Size = UDim2.new(1, -16, 0, 36)
+        tabBtn.BackgroundColor3 = Color3.fromRGB(24, 20, 28)
+        tabBtn.BackgroundTransparency = 0.5
         tabBtn.Text = ""
         tabBtn.Name = name
         tabBtn.Parent = tabList
 
         local tabCorner = Instance.new("UICorner")
-        tabCorner.CornerRadius = UDim.new(0, 6)
+        tabCorner.CornerRadius = UDim.new(0, 8)
         tabCorner.Parent = tabBtn
 
         local indicator = Instance.new("Frame")
-        indicator.Size = UDim2.new(0, 3, 0, 16)
-        indicator.Position = UDim2.new(0, 2, 0.5, -8)
-        indicator.BackgroundColor3 = Color3.fromRGB(215, 95, 50)
+        indicator.Size = UDim2.new(0, 4, 0, 18)
+        indicator.Position = UDim2.new(0, 3, 0.5, -9)
+        indicator.BackgroundColor3 = Color3.fromRGB(255, 115, 45)
         indicator.BorderSizePixel = 0
         indicator.Visible = false
         indicator.Parent = tabBtn
@@ -964,46 +1058,48 @@ local success, err = pcall(function()
         indCorner.Parent = indicator
 
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -24, 1, 0)
-        label.Position = UDim2.new(0, 22, 0, 0)
+        label.Size = UDim2.new(1, -26, 1, 0)
+        label.Position = UDim2.new(0, 24, 0, 0)
         label.BackgroundTransparency = 1
         label.Text = iconText .. "  " .. name
-        label.TextColor3 = Color3.fromRGB(170, 155, 150)
+        label.TextColor3 = Color3.fromRGB(150, 140, 160)
         label.Font = Enum.Font.GothamMedium
-        label.TextSize = 11
+        label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.Parent = tabBtn
 
+        addClickBounce(tabBtn)
+
         tabBtn.MouseButton1Click:Connect(function()
             if activeTabBtn and activeTabBtn ~= tabBtn then
-                activeTabBtn.BackgroundTransparency = 0.6
+                activeTabBtn.BackgroundTransparency = 0.5
                 local prevInd = activeTabBtn:FindFirstChildOfClass("Frame")
                 if prevInd then prevInd.Visible = false end
                 local prevLbl = activeTabBtn:FindFirstChildOfClass("TextLabel")
-                if prevLbl then prevLbl.TextColor3 = Color3.fromRGB(170, 155, 150) end
+                if prevLbl then prevLbl.TextColor3 = Color3.fromRGB(150, 140, 160) end
                 if pages[activeTabBtn.Name] then pages[activeTabBtn.Name].Visible = false end
             end
 
             activeTabBtn = tabBtn
-            tabBtn.BackgroundTransparency = 0.2
+            tabBtn.BackgroundTransparency = 0.1
             indicator.Visible = true
-            label.TextColor3 = Color3.fromRGB(240, 230, 225)
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
             
             headerTitle.Text = name
-            subTitle.Text = subTitleText or "Category"
+            subTitle.Text = subTitleText or "Category Options"
             if pages[name] then pages[name].Visible = true end
         end)
         return tabBtn
     end
 
-    local mainTab = addTab("Main", "☰", "Farm")
-    local lobbyTab = addTab("Lobby", "🌙", "Create Room")
-    local webhookTab = addTab("Webhook", "🌴", "Settings")
-    local miscTab = addTab("Misc", "📄", "General")
-    local settingsTab = addTab("Settings", "⚙", "Interface")
+    local mainTab = addTab("Main", "☰", "Farm Settings & Automation")
+    local lobbyTab = addTab("Lobby", "🌙", "Lobby Operations & Room Creation")
+    local webhookTab = addTab("Webhook", "🌴", "Webhook Notifications")
+    local miscTab = addTab("Misc", "📄", "Performance & General Utilities")
+    local settingsTab = addTab("Settings", "⚙", "Configuration Manager")
 
     -- Fill Main Tab
-    addTitle(mainPage, "Farm")
+    addTitle(mainPage, "Farm Settings")
     addToggle(mainPage, "Auto Farm", "AutoFarm", FarmSettings.AutoFarmUserPreference, nil, function(state)
         FarmSettings.AutoFarmUserPreference = state
     end)
@@ -1012,7 +1108,7 @@ local success, err = pcall(function()
         FarmSettings.FarmPosition = selected
     end)
 
-    addTitle(mainPage, "Attack and Skills")
+    addTitle(mainPage, "Attack & Skills")
     addToggle(mainPage, "Auto Attack", "AutoAttack", FarmSettings.AutoAttack, nil, function(state)
         FarmSettings.AutoAttack = state
     end)
@@ -1033,7 +1129,7 @@ local success, err = pcall(function()
         FarmSettings.AutoSkills.G = state
     end)
 
-    addTitle(mainPage, "In Match")
+    addTitle(mainPage, "In-Match Automation")
     addToggle(mainPage, "Auto Switch Weapons", "AutoSwitchWeapons", FarmSettings.AutoSwitchWeapons, nil, function(state)
         FarmSettings.AutoSwitchWeapons = state
     end)
@@ -1067,7 +1163,7 @@ local success, err = pcall(function()
         FarmSettings.AutoSellOres = state
     end)
 
-    addTitle(lobbyPage, "Forge")
+    addTitle(lobbyPage, "Forge System")
     addToggle(lobbyPage, "Perfect Minigame", "PerfectMinigame", FarmSettings.PerfectMinigame, nil, function(state)
         FarmSettings.PerfectMinigame = state
     end)
@@ -1081,7 +1177,7 @@ local success, err = pcall(function()
         FarmSettings.AutoBuyConsumable = state
     end)
 
-    -- Fill Misc Tab (INCORPORATED AUTO EXECUTE CODE)
+    -- Fill Misc Tab
     addTitle(miscPage, "Performance & Display")
     addToggle(miscPage, "Disable Rendering (Black Screen)", "DisableRendering", FarmSettings.DisableRendering, nil, function(state)
         FarmSettings.DisableRendering = state
@@ -1116,33 +1212,32 @@ local success, err = pcall(function()
     addTitle(miscPage, "Utilities")
     addToggle(miscPage, "Auto Hide UI", "AutoHideUi", FarmSettings.AutoHideUi, "Hides UI when script executes", function(state)
         FarmSettings.AutoHideUi = state
+        mainFrame.Visible = not state
+        restoreBtn.Visible = state
     end)
 
-    -- Helper function to queue execution on teleport
-local function applyAutoExecute(state)
-    if state then
-        pcall(function()
-            local queueTeleport = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
-            if queueTeleport then
-                queueTeleport([[
-                    task.spawn(function()
-                        loadstring(game:HttpGet("https://pastebin.com/raw/btkcEzNP"))()
-                    end)
-                ]])
-            end
-        end)
+    local function applyAutoExecute(state)
+        if state then
+            pcall(function()
+                local queueTeleport = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
+                if queueTeleport then
+                    queueTeleport([[
+                        task.spawn(function()
+                            loadstring(game:HttpGet("https://pastebin.com/raw/btkcEzNP"))()
+                        end)
+                    ]])
+                end
+            end)
+        end
     end
-end
 
--- Run immediately on script execution if enabled by default or autoloaded
-applyAutoExecute(AutoExecuteState)
+    applyAutoExecute(AutoExecuteState)
 
--- Toggle listener
-addToggle(miscPage, "Auto Execute", "AutoExecute", AutoExecuteState, "Auto-reloads script on teleports", function(state)
-    AutoExecuteState = state
-    FarmSettings.AutoExecute = state
-    applyAutoExecute(state)
-end)
+    addToggle(miscPage, "Auto Execute", "AutoExecute", AutoExecuteState, "Auto-reloads script on teleports", function(state)
+        AutoExecuteState = state
+        FarmSettings.AutoExecute = state
+        applyAutoExecute(state)
+    end)
 
     addActionBtn(miscPage, "Rejoin Game", function()
         TeleportService:Teleport(game.PlaceId, LocalPlayer)
@@ -1153,7 +1248,7 @@ end)
     end)
 
     -- Fill Settings Tab
-    addTitle(settingsPage, "Configuration")
+    addTitle(settingsPage, "Configuration Manager")
     addInputRow(settingsPage, "Config name", "Enter name...", function(text)
         CurrentConfigInput = text
     end)
@@ -1196,12 +1291,12 @@ end)
 
     -- Set Initial Tab View
     activeTabBtn = mainTab
-    mainTab.BackgroundTransparency = 0.2
+    mainTab.BackgroundTransparency = 0.1
     mainTab:FindFirstChildOfClass("Frame").Visible = true
-    mainTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 230, 225)
+    mainTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(255, 255, 255)
     mainPage.Visible = true
 
-    print("[AutoFarm Script] Script successfully initialized with Auto Execute teleport queue!")
+    print("[AutoFarm Script] Script execution complete with modern GUI design!")
 end)
 
 if not success then
