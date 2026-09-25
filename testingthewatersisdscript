@@ -1,5 +1,5 @@
 task.spawn(function()
-    print("[AutoFarm Script] Initializing execution with redesigned UI...")
+    print("[AutoFarm Script] Initializing execution with Wave Transition Engine...")
 end)
 
 local success, err = pcall(function()
@@ -41,6 +41,7 @@ local success, err = pcall(function()
         AutoSwitchWeapons = true,
         AutoReplay = true,              -- Auto replay on dungeon clear via GameRoundRE
         AutoGiveUp = true,              -- Auto give up / return to lobby on fail
+        AutoEnterPortal = true,         -- Auto interact with round door portals between zones
         
         -- Lobby Settings State
         SelectWorld = "Starless Forest",
@@ -109,6 +110,7 @@ local success, err = pcall(function()
             AutoSwitchWeapons = FarmSettings.AutoSwitchWeapons,
             AutoReplay = FarmSettings.AutoReplay,
             AutoGiveUp = FarmSettings.AutoGiveUp,
+            AutoEnterPortal = FarmSettings.AutoEnterPortal,
             Q = FarmSettings.AutoSkills.Q,
             E = FarmSettings.AutoSkills.E,
             R = FarmSettings.AutoSkills.R,
@@ -144,6 +146,7 @@ local success, err = pcall(function()
                 if decoded.AutoSwitchWeapons ~= nil then FarmSettings.AutoSwitchWeapons = decoded.AutoSwitchWeapons end
                 if decoded.AutoReplay ~= nil then FarmSettings.AutoReplay = decoded.AutoReplay end
                 if decoded.AutoGiveUp ~= nil then FarmSettings.AutoGiveUp = decoded.AutoGiveUp end
+                if decoded.AutoEnterPortal ~= nil then FarmSettings.AutoEnterPortal = decoded.AutoEnterPortal end
                 if decoded.Q ~= nil then FarmSettings.AutoSkills.Q = decoded.Q end
                 if decoded.E ~= nil then FarmSettings.AutoSkills.E = decoded.E end
                 if decoded.R ~= nil then FarmSettings.AutoSkills.R = decoded.R end
@@ -171,6 +174,7 @@ local success, err = pcall(function()
                     if key == "AutoSwitchWeapons" then updateFunc(FarmSettings.AutoSwitchWeapons) end
                     if key == "AutoReplay" then updateFunc(FarmSettings.AutoReplay) end
                     if key == "AutoGiveUp" then updateFunc(FarmSettings.AutoGiveUp) end
+                    if key == "AutoEnterPortal" then updateFunc(FarmSettings.AutoEnterPortal) end
                     if key == "Q" then updateFunc(FarmSettings.AutoSkills.Q) end
                     if key == "E" then updateFunc(FarmSettings.AutoSkills.E) end
                     if key == "R" then updateFunc(FarmSettings.AutoSkills.R) end
@@ -209,6 +213,14 @@ local success, err = pcall(function()
     local lastHoverPosition = nil
     local hasProcessedResult = false
 
+    -- Track Round Clearing & Transition States
+    local hasTrackedRound2 = false
+    local hasTeleportedToCharPosAfterR2 = false
+    local hasTeleportedToRound3CFrame = false
+
+    -- Explicit Character Position (from screenshot)
+    local charPositionAfterR2 = CFrame.new(2932.822, 113.23, 3419.521, 0, 0, -1, 0, 1, 0, 1, 0, 0)
+
     -- LOBBY & DUNGEON DETECTOR ENGINE
     local function isInDungeon()
         local enemyFolder = workspace:FindFirstChild("EnemyNpc")
@@ -231,10 +243,106 @@ local success, err = pcall(function()
                     FarmSettings.AutoFarm = false
                     FarmSettings.CurrentTarget = nil
                     hasProcessedResult = false
+                    hasTrackedRound2 = false
+                    hasTeleportedToCharPosAfterR2 = false
+                    hasTeleportedToRound3CFrame = false
                 end
             else
                 FarmSettings.AutoFarm = false
                 hasProcessedResult = false
+                hasTrackedRound2 = false
+                hasTeleportedToCharPosAfterR2 = false
+                hasTeleportedToRound3CFrame = false
+            end
+        end
+    end)
+
+    -- PORTAL, WAVESPAWN TOUCH & MULTI-STEP TRANSITION ENGINE
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            if FarmSettings.AutoFarm and FarmSettings.AutoEnterPortal then
+                -- 1. Portal Remote Invoker
+                pcall(function()
+                    local roundDoor = workspace:FindFirstChild("RoundDoor")
+                    if roundDoor then
+                        local portal = roundDoor:FindFirstChild("Portal")
+                        local root = portal and portal:FindFirstChild("Root")
+                        local rf = root and root:FindFirstChild("RF")
+                        
+                        if rf and rf:IsA("RemoteFunction") then
+                            rf:InvokeServer()
+                        end
+                    end
+                end)
+
+                -- 2. Wave / Wake Touch Processing
+                pcall(function()
+                    local character = LocalPlayer.Character
+                    local myHRP = character and character:FindFirstChild("HumanoidRootPart")
+
+                    if not myHRP then return end
+
+                    local waveFolder = workspace:FindFirstChild("WaveSpawnTouch")
+                    local wakeFolder = workspace:FindFirstChild("RoundWakeTouch") or (workspace:FindFirstChild("WorldEnemys") and workspace.WorldEnemys:FindFirstChild("RoundWakeTouch"))
+
+                    local round2InWave = waveFolder and waveFolder:FindFirstChild("Round2")
+                    local round2InWake = wakeFolder and wakeFolder:FindFirstChild("Round2")
+                    local round3InWave = waveFolder and waveFolder:FindFirstChild("Round3")
+                    local round3InWake = wakeFolder and wakeFolder:FindFirstChild("Round3")
+
+                    -- Track if Round 2 was present
+                    if round2InWave or round2InWake then
+                        hasTrackedRound2 = true
+                    end
+
+                    -- Fire Touch Interests across containers
+                    local foldersToScan = {waveFolder, wakeFolder}
+                    for _, folder in ipairs(foldersToScan) do
+                        if folder then
+                            for _, child in ipairs(folder:GetChildren()) do
+                                if child:IsA("BasePart") then
+                                    local touchInterest = child:FindFirstChildOfClass("TouchInterest") or child:FindFirstChild("TouchInterest")
+                                    if touchInterest then
+                                        if firetouchinterest then
+                                            firetouchinterest(myHRP, child, 0)
+                                            task.wait(0.02)
+                                            firetouchinterest(myHRP, child, 1)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    local enemyFolder = workspace:FindFirstChild("EnemyNpc")
+                    local hasEnemies = enemyFolder and #enemyFolder:GetChildren() > 0
+
+                    -- STEP 1: After Round 2 cleared -> Teleport character to specified position
+                    if hasTrackedRound2 and (not round2InWave) and (not round2InWake) and (not hasTeleportedToCharPosAfterR2) and (not hasEnemies) then
+                        hasTeleportedToCharPosAfterR2 = true
+                        
+                        myHRP.CFrame = charPositionAfterR2
+                        lastHoverPosition = charPositionAfterR2
+                    end
+
+                    -- STEP 2: Once Round 3 appears in WaveSpawnTouch -> Teleport to Round 3 CFrame
+                    local activeRound3 = round3InWave or round3InWake
+                    if activeRound3 and (not hasTeleportedToRound3CFrame) then
+                        hasTeleportedToRound3CFrame = true
+
+                        local r3CF = activeRound3.CFrame
+                        myHRP.CFrame = r3CF
+                        lastHoverPosition = r3CF
+
+                        -- Fire TouchInterest on Round 3 specifically
+                        if firetouchinterest then
+                            firetouchinterest(myHRP, activeRound3, 0)
+                            task.wait(0.02)
+                            firetouchinterest(myHRP, activeRound3, 1)
+                        end
+                    end
+                end)
             end
         end
     end)
@@ -1139,6 +1247,9 @@ local success, err = pcall(function()
     addToggle(mainPage, "Auto GiveUp", "AutoGiveUp", FarmSettings.AutoGiveUp, nil, function(state)
         FarmSettings.AutoGiveUp = state
     end)
+    addToggle(mainPage, "Auto Enter Portal", "AutoEnterPortal", FarmSettings.AutoEnterPortal, "Enters Portal & auto transitions to Round 3 Island", function(state)
+        FarmSettings.AutoEnterPortal = state
+    end)
 
     -- Fill Lobby Tab
     addTitle(lobbyPage, "Create Room")
@@ -1296,7 +1407,7 @@ local success, err = pcall(function()
     mainTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(255, 255, 255)
     mainPage.Visible = true
 
-    print("[AutoFarm Script] Script execution complete with modern GUI design!")
+    print("[AutoFarm Script] Script execution complete with multi-step Round 3 transition!")
 end)
 
 if not success then
