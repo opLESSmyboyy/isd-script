@@ -340,6 +340,7 @@ local success, err = pcall(function()
         return nil, nil
     end
 
+   -- Position Locking Loop with Below-Ground Hover Fallback
     RunService.Heartbeat:Connect(function()
         if not FarmSettings.AutoFarm then return end
 
@@ -353,6 +354,7 @@ local success, err = pcall(function()
         local target, targetCF = getClosestEnemy()
         FarmSettings.CurrentTarget = target
 
+        -- Disable collision on character parts to prevent getting caught in terrain
         for _, part in ipairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
@@ -361,16 +363,21 @@ local success, err = pcall(function()
 
         if target and targetCF then
             local distance = FarmSettings.Distance
-            local farmCF = targetCF * CFrame.new(0, distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+            local farmCF
+
             if FarmSettings.FarmPosition == "Below" then
                 farmCF = targetCF * CFrame.new(0, -distance, 0) * CFrame.Angles(math.rad(90), 0, 0)
+            else
+                farmCF = targetCF * CFrame.new(0, distance, 0) * CFrame.Angles(math.rad(-90), 0, 0)
             end
 
+            -- Apply position and save as the active hover position
             myHRP.CFrame = farmCF
-            lastHoverPosition = myHRP.CFrame
+            lastHoverPosition = farmCF
             myHRP.AssemblyLinearVelocity = Vector3.zero
             myHRP.AssemblyAngularVelocity = Vector3.zero
-        elseif isProcessingCheckpoint and lastHoverPosition then
+        elseif lastHoverPosition then
+            -- Fallback: Hold position floating in place if no enemies are currently active
             myHRP.CFrame = lastHoverPosition
             myHRP.AssemblyLinearVelocity = Vector3.zero
             myHRP.AssemblyAngularVelocity = Vector3.zero
