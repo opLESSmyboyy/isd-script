@@ -9,12 +9,13 @@ local LocalPlayer = Players.LocalPlayer
 -- Direct Game Remotes Discovered from Your Traces & Explorer
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local PlayerActionRE = Remotes:WaitForChild("PlayerActionRE")
+local GameRoundRE = Remotes:WaitForChild("GameRoundRE")
 
 local EquipmentRE = ReplicatedStorage:FindFirstChild("Framework") 
     and ReplicatedStorage.Framework.Gameplay.EquipmentSystem 
     and ReplicatedStorage.Framework.Gameplay.EquipmentSystem.EquipmentRE
 
--- Auto Farm State Setup with Individual Toggles
+-- Auto Farm State Setup with Individual Toggles & Match End Handlers
 local FarmSettings = {
     AutoFarmUserPreference = false, -- User's actual toggle setting for Auto Farm
     AutoFarm = false,               -- Actual execution state controlled by Lobby/Dungeon check
@@ -29,6 +30,8 @@ local FarmSettings = {
         G = true                    -- Linked to SkillAW
     },
     AutoSwitchWeapons = true,
+    AutoReplay = true,              -- Auto replay on dungeon clear via GameRoundRE
+    AutoGiveUp = true,              -- Auto give up / return to lobby on fail
     CurrentTarget = nil
 }
 
@@ -37,6 +40,7 @@ local visitedCheckpoints = {}
 local isProcessingCheckpoint = false
 local lastIslandCheckPosition = Vector3.zero
 local lastHoverPosition = nil
+local hasProcessedResult = false
 
 -- ===================================================
 -- NOTIFICATION SUPPRESSOR 
@@ -91,9 +95,64 @@ task.spawn(function()
             else
                 FarmSettings.AutoFarm = false
                 FarmSettings.CurrentTarget = nil
+                hasProcessedResult = false -- Reset result flag in lobby
             end
         else
             FarmSettings.AutoFarm = false
+            hasProcessedResult = false
+        end
+    end
+end)
+
+-- ===================================================
+-- AUTO REPLAY & AUTO GIVEUP MONITORING ENGINE
+-- ===================================================
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui and not hasProcessedResult then
+            local resultGui = playerGui:FindFirstChild("ResultGui")
+            if resultGui then
+                local screenSettlement = resultGui:FindFirstChild("ScreenSettlement")
+                if screenSettlement and screenSettlement.Visible then
+                    local btnGroup = screenSettlement:FindFirstChild("BtnGroup")
+                    local victoryFrame = screenSettlement:FindFirstChild("Victory")
+                    local failedFrame = screenSettlement:FindFirstChild("Failed")
+
+                    -- Check if Victory / Cleared -> Fire GameRoundRE directly
+                    if FarmSettings.AutoReplay and victoryFrame and victoryFrame.Visible then
+                        hasProcessedResult = true
+                        task.wait(1.0) -- Wait for rewards screen to stabilize
+                        pcall(function()
+                            if GameRoundRE then
+                                GameRoundRE:FireServer("VotePlayAgain")
+                            end
+                        end)
+                    -- Check if Defeated / Failed -> Click Return to Lobby button
+                    elseif FarmSettings.AutoGiveUp and failedFrame and failedFrame.Visible then
+                        if btnGroup then
+                            for _, child in ipairs(btnGroup:GetChildren()) do
+                                if child:IsA("TextButton") or child:IsA("ImageButton") then
+                                    local btnText = child:FindFirstChildOfClass("TextLabel")
+                                    local textContent = btnText and btnText.Text or child.Text or ""
+                                    if textContent:find("Return to lobby") or textContent:find("Lobby") then
+                                        hasProcessedResult = true
+                                        task.wait(0.5)
+                                        pcall(function()
+                                            for _, conn in ipairs(getconnections(child.MouseButton1Click)) do
+                                                conn:Fire()
+                                            end
+                                        end)
+                                        pcall(function() child.Activated:Fire() end)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
 end)
@@ -1099,8 +1158,12 @@ addToggle(mainPage, "Auto Pickup Card", true, "Endless Tower Mode")
 addToggle(mainPage, "Auto Switch Weapons", true, nil, function(state)
     FarmSettings.AutoSwitchWeapons = state
 end)
-addToggle(mainPage, "Auto Replay", true)
-addToggle(mainPage, "Auto GiveUp", true)
+addToggle(mainPage, "Auto Replay", true, nil, function(state)
+    FarmSettings.AutoReplay = state
+end)
+addToggle(mainPage, "Auto GiveUp", true, nil, function(state)
+    FarmSettings.AutoGiveUp = state
+end)
 addToggle(mainPage, "Return Lobby If Bag Full", true)
 
 -- Fill Lobby Tab
