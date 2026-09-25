@@ -1,5 +1,5 @@
 task.spawn(function()
-    print("[AutoFarm Script] Initializing execution with Misc section restored...")
+    print("[AutoFarm Script] Initializing execution...")
 end)
 
 local success, err = pcall(function()
@@ -12,7 +12,7 @@ local success, err = pcall(function()
     local HttpService = game:GetService("HttpService")
     local LocalPlayer = Players.LocalPlayer
 
-    -- Direct Game Remotes Discovered from Your Traces & Explorer
+    -- Direct Game Remotes
     local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
     local PlayerActionRE = Remotes and Remotes:WaitForChild("PlayerActionRE", 5)
     local GameRoundRE = Remotes and Remotes:WaitForChild("GameRoundRE", 5)
@@ -20,6 +20,9 @@ local success, err = pcall(function()
     local EquipmentRE = ReplicatedStorage:FindFirstChild("Framework") 
         and ReplicatedStorage.Framework.Gameplay.EquipmentSystem 
         and ReplicatedStorage.Framework.Gameplay.EquipmentSystem:FindFirstChild("EquipmentRE")
+
+    -- Auto Execute Teleport Tracking Variable
+    local AutoExecuteState = true
 
     -- ORIGINAL WORKING FARM SETTINGS TABLE
     local FarmSettings = {
@@ -39,6 +42,16 @@ local success, err = pcall(function()
         AutoReplay = true,              -- Auto replay on dungeon clear via GameRoundRE
         AutoGiveUp = true,              -- Auto give up / return to lobby on fail
         
+        -- Lobby Settings State
+        SelectWorld = "Starless Forest",
+        SelectDifficulty = "Trial [Hell]",
+        SelectOre = "Amber (Epic)",
+        AutoJoin = false,
+        AutoSellOres = true,
+        PerfectMinigame = true,
+        SelectedItem = "Harvest Potion",
+        AutoBuyConsumable = true,
+
         -- Misc Settings State
         DisableRendering = false,
         FpsBoost = false,
@@ -85,6 +98,7 @@ local success, err = pcall(function()
     end
 
     local visualToggles = {}
+    local visualDropdowns = {}
 
     local function saveConfig(name)
         if not name or name == "" or name == "--" then return end
@@ -99,6 +113,14 @@ local success, err = pcall(function()
             E = FarmSettings.AutoSkills.E,
             R = FarmSettings.AutoSkills.R,
             G = FarmSettings.AutoSkills.G,
+            SelectWorld = FarmSettings.SelectWorld,
+            SelectDifficulty = FarmSettings.SelectDifficulty,
+            SelectOre = FarmSettings.SelectOre,
+            AutoJoin = FarmSettings.AutoJoin,
+            AutoSellOres = FarmSettings.AutoSellOres,
+            PerfectMinigame = FarmSettings.PerfectMinigame,
+            SelectedItem = FarmSettings.SelectedItem,
+            AutoBuyConsumable = FarmSettings.AutoBuyConsumable,
             DisableRendering = FarmSettings.DisableRendering,
             FpsBoost = FarmSettings.FpsBoost,
             AutoHideUi = FarmSettings.AutoHideUi,
@@ -126,10 +148,21 @@ local success, err = pcall(function()
                 if decoded.E ~= nil then FarmSettings.AutoSkills.E = decoded.E end
                 if decoded.R ~= nil then FarmSettings.AutoSkills.R = decoded.R end
                 if decoded.G ~= nil then FarmSettings.AutoSkills.G = decoded.G end
+                if decoded.SelectWorld ~= nil then FarmSettings.SelectWorld = decoded.SelectWorld end
+                if decoded.SelectDifficulty ~= nil then FarmSettings.SelectDifficulty = decoded.SelectDifficulty end
+                if decoded.SelectOre ~= nil then FarmSettings.SelectOre = decoded.SelectOre end
+                if decoded.AutoJoin ~= nil then FarmSettings.AutoJoin = decoded.AutoJoin end
+                if decoded.AutoSellOres ~= nil then FarmSettings.AutoSellOres = decoded.AutoSellOres end
+                if decoded.PerfectMinigame ~= nil then FarmSettings.PerfectMinigame = decoded.PerfectMinigame end
+                if decoded.SelectedItem ~= nil then FarmSettings.SelectedItem = decoded.SelectedItem end
+                if decoded.AutoBuyConsumable ~= nil then FarmSettings.AutoBuyConsumable = decoded.AutoBuyConsumable end
                 if decoded.DisableRendering ~= nil then FarmSettings.DisableRendering = decoded.DisableRendering end
                 if decoded.FpsBoost ~= nil then FarmSettings.FpsBoost = decoded.FpsBoost end
                 if decoded.AutoHideUi ~= nil then FarmSettings.AutoHideUi = decoded.AutoHideUi end
-                if decoded.AutoExecute ~= nil then FarmSettings.AutoExecute = decoded.AutoExecute end
+                if decoded.AutoExecute ~= nil then 
+                    FarmSettings.AutoExecute = decoded.AutoExecute
+                    AutoExecuteState = decoded.AutoExecute
+                end
 
                 -- Sync visually to GUI
                 for key, updateFunc in pairs(visualToggles) do
@@ -142,10 +175,22 @@ local success, err = pcall(function()
                     if key == "E" then updateFunc(FarmSettings.AutoSkills.E) end
                     if key == "R" then updateFunc(FarmSettings.AutoSkills.R) end
                     if key == "G" then updateFunc(FarmSettings.AutoSkills.G) end
+                    if key == "AutoJoin" then updateFunc(FarmSettings.AutoJoin) end
+                    if key == "AutoSellOres" then updateFunc(FarmSettings.AutoSellOres) end
+                    if key == "PerfectMinigame" then updateFunc(FarmSettings.PerfectMinigame) end
+                    if key == "AutoBuyConsumable" then updateFunc(FarmSettings.AutoBuyConsumable) end
                     if key == "DisableRendering" then updateFunc(FarmSettings.DisableRendering) end
                     if key == "FpsBoost" then updateFunc(FarmSettings.FpsBoost) end
                     if key == "AutoHideUi" then updateFunc(FarmSettings.AutoHideUi) end
                     if key == "AutoExecute" then updateFunc(FarmSettings.AutoExecute) end
+                end
+
+                for key, updateTextFunc in pairs(visualDropdowns) do
+                    if key == "FarmPosition" then updateTextFunc(FarmSettings.FarmPosition) end
+                    if key == "SelectWorld" then updateTextFunc(FarmSettings.SelectWorld) end
+                    if key == "SelectDifficulty" then updateTextFunc(FarmSettings.SelectDifficulty) end
+                    if key == "SelectOre" then updateTextFunc(FarmSettings.SelectOre) end
+                    if key == "SelectedItem" then updateTextFunc(FarmSettings.SelectedItem) end
                 end
             end
         end)
@@ -653,7 +698,7 @@ local success, err = pcall(function()
         end)
     end
 
-    local function addRefreshableDropdown(parent, title, optionsProvider, defaultSelected, callback)
+    local function addRefreshableDropdown(parent, title, dropdownKey, optionsProvider, defaultSelected, callback)
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, -6, 0, 42)
         row.BackgroundColor3 = Color3.fromRGB(45, 34, 32)
@@ -719,6 +764,12 @@ local success, err = pcall(function()
 
         local isOpen = false
 
+        if dropdownKey then
+            visualDropdowns[dropdownKey] = function(newText)
+                dropBtn.Text = "  " .. tostring(newText)
+            end
+        end
+
         local function refreshDropdownOptions()
             for _, child in ipairs(optionContainer:GetChildren()) do
                 if child:IsA("TextButton") then child:Destroy() end
@@ -771,8 +822,8 @@ local success, err = pcall(function()
         return { Refresh = refreshDropdownOptions }
     end
 
-    local function addDropdown(parent, title, options, defaultSelected, callback)
-        return addRefreshableDropdown(parent, title, function() return options end, defaultSelected, callback)
+    local function addDropdown(parent, title, dropdownKey, options, defaultSelected, callback)
+        return addRefreshableDropdown(parent, title, dropdownKey, function() return options end, defaultSelected, callback)
     end
 
     local function addActionBtn(parent, title, clickCallback, subDesc)
@@ -795,6 +846,20 @@ local success, err = pcall(function()
         rowLabel.TextSize = 12
         rowLabel.TextXAlignment = Enum.TextXAlignment.Left
         rowLabel.Parent = row
+
+        if subDesc then
+            local subLabel = Instance.new("TextLabel")
+            subLabel.Name = "SubDescLabel"
+            subLabel.Size = UDim2.new(0.8, 0, 0, 16)
+            subLabel.Position = UDim2.new(0, 12, 0, 22)
+            subLabel.BackgroundTransparency = 1
+            subLabel.Text = subDesc
+            subLabel.TextColor3 = Color3.fromRGB(140, 130, 125)
+            subLabel.Font = Enum.Font.Gotham
+            subLabel.TextSize = 10
+            subLabel.TextXAlignment = Enum.TextXAlignment.Left
+            subLabel.Parent = row
+        end
 
         local actionBtn = Instance.new("TextButton")
         actionBtn.Size = UDim2.new(0, 30, 0, 26)
@@ -936,7 +1001,7 @@ local success, err = pcall(function()
         FarmSettings.AutoFarmUserPreference = state
     end)
 
-    addDropdown(mainPage, "Farm Position", {"Above", "Below"}, FarmSettings.FarmPosition, function(selected)
+    addDropdown(mainPage, "Farm Position", "FarmPosition", {"Above", "Below"}, FarmSettings.FarmPosition, function(selected)
         FarmSettings.FarmPosition = selected
     end)
 
@@ -972,7 +1037,44 @@ local success, err = pcall(function()
         FarmSettings.AutoGiveUp = state
     end)
 
-    -- Fill Misc Tab (RESTORED FULLY)
+    -- Fill Lobby Tab
+    addTitle(lobbyPage, "Create Room")
+    addDropdown(lobbyPage, "Select World", "SelectWorld", {"Starless Forest", "Frozen Valley", "Oathloast Castle", "Tartarus", "Sakura Village", "Endless Tower"}, FarmSettings.SelectWorld, function(selected)
+        FarmSettings.SelectWorld = selected
+    end)
+
+    addDropdown(lobbyPage, "Select Difficulty", "SelectDifficulty", {"Trial", "Challenge", "Penitent", "Torment", "Inferno", "Trial [Hell]", "Challenge [Hell]", "Penitent [Hell]", "Torment [Hell]", "Inferno [Hell]"}, FarmSettings.SelectDifficulty, function(selected)
+        FarmSettings.SelectDifficulty = selected
+    end)
+
+    addToggle(lobbyPage, "Auto Join", "AutoJoin", FarmSettings.AutoJoin, nil, function(state)
+        FarmSettings.AutoJoin = state
+    end)
+
+    addTitle(lobbyPage, "Sell Ores")
+    addDropdown(lobbyPage, "Select Ore(s)", "SelectOre", {"Amber (Epic)", "Apocalypse (Mythic)", "Aquamarine (Epic)", "Azurite (Uncommon)", "BlackHole (Legendary)", "Blood Heart (Legendary)", "Bloodshard (Rare)", "Compass (Epic)", "Coralreef (Legendary)", "Corundum (Mythic)", "Curseborne (Mythic)", "Dark Blossom (Mythic)", "Darkcube (Epic)", "Earthmaw (Mythic)", "Epidote (Rare)", "Eye of Hatred (Legendary)", "FlameEye (Epic)", "Fluorite (Mythic)", "Frostheart (Legendary)", "Frostine (Legendary)", "Frozenite (Legendary)", "Genestone (Legendary)", "Glacium (Legendary)", "Gwindel (Mythic)", "Heatshell (Mythic)", "Hexbane (Rare)", "Jade (Uncommon)", "Kenki (Mythic)", "Lionite (Mythic)", "Moonstone (Legendary)", "Opal (Legendary)", "Painstone (Legendary)", "Pyrite (Uncommon)", "Raindrop (Rare)", "Redsunder (Mythic)", "Romanstone (Epic)", "RoseTourmaline (Mythic)", "Rotten Lotus (Mythic)", "Rustylron (Rare)", "Sand Rock (Common)", "Saturn (Epic)", "SmokyQuartz (Mythic)", "Soulglass (Mythic)", "Starfall (Mythic)", "Topaz (Mythic)", "Torbernite (Legendary)", "Verdanite (Uncommon)", "Voidstar (Legendary)", "Wildcore (Legendary)", "Witherite (Mythic)"}, FarmSettings.SelectOre, function(selected)
+        FarmSettings.SelectOre = selected
+    end)
+
+    addToggle(lobbyPage, "Auto Sell Ores", "AutoSellOres", FarmSettings.AutoSellOres, nil, function(state)
+        FarmSettings.AutoSellOres = state
+    end)
+
+    addTitle(lobbyPage, "Forge")
+    addToggle(lobbyPage, "Perfect Minigame", "PerfectMinigame", FarmSettings.PerfectMinigame, nil, function(state)
+        FarmSettings.PerfectMinigame = state
+    end)
+
+    addTitle(lobbyPage, "Grocery Shop")
+    addDropdown(lobbyPage, "Selected Item(s)", "SelectedItem", {"Harvest Potion", "Fate Potion", "Friendship Potion"}, FarmSettings.SelectedItem, function(selected)
+        FarmSettings.SelectedItem = selected
+    end)
+
+    addToggle(lobbyPage, "Auto Buy Consumable", "AutoBuyConsumable", FarmSettings.AutoBuyConsumable, nil, function(state)
+        FarmSettings.AutoBuyConsumable = state
+    end)
+
+    -- Fill Misc Tab (INCORPORATED AUTO EXECUTE CODE)
     addTitle(miscPage, "Performance & Display")
     addToggle(miscPage, "Disable Rendering (Black Screen)", "DisableRendering", FarmSettings.DisableRendering, nil, function(state)
         FarmSettings.DisableRendering = state
@@ -1009,9 +1111,31 @@ local success, err = pcall(function()
         FarmSettings.AutoHideUi = state
     end)
 
-    addToggle(miscPage, "Auto Execute", "AutoExecute", FarmSettings.AutoExecute, "Auto-reloads script on teleports", function(state)
-        FarmSettings.AutoExecute = state
-    end)
+    -- Helper function to queue execution on teleport
+local function applyAutoExecute(state)
+    if state then
+        pcall(function()
+            local queueTeleport = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
+            if queueTeleport then
+                queueTeleport([[
+                    task.spawn(function()
+                        loadstring(game:HttpGet("https://pastebin.com/raw/btkcEzNP"))()
+                    end)
+                ]])
+            end
+        end)
+    end
+end
+
+-- Run immediately on script execution if enabled by default or autoloaded
+applyAutoExecute(AutoExecuteState)
+
+-- Toggle listener
+addToggle(miscPage, "Auto Execute", "AutoExecute", AutoExecuteState, "Auto-reloads script on teleports", function(state)
+    AutoExecuteState = state
+    FarmSettings.AutoExecute = state
+    applyAutoExecute(state)
+end)
 
     addActionBtn(miscPage, "Rejoin Game", function()
         TeleportService:Teleport(game.PlaceId, LocalPlayer)
@@ -1027,7 +1151,7 @@ local success, err = pcall(function()
         CurrentConfigInput = text
     end)
 
-    local configDropdownObj = addRefreshableDropdown(settingsPage, "Config list", getStoredConfigs, SelectedConfigName, function(selected)
+    local configDropdownObj = addRefreshableDropdown(settingsPage, "Config list", nil, getStoredConfigs, SelectedConfigName, function(selected)
         SelectedConfigName = selected
     end)
 
@@ -1050,6 +1174,19 @@ local success, err = pcall(function()
         configDropdownObj.Refresh()
     end)
 
+    addActionBtn(settingsPage, "Set as autoload", function()
+        if SelectedConfigName and SelectedConfigName ~= "--" then
+            AutoloadConfigName = SelectedConfigName
+            pcall(function()
+                writefile(AutoloadFile, AutoloadConfigName)
+            end)
+            local subLbl = settingsPage:FindFirstChild("SubDescLabel", true)
+            if subLbl then
+                subLbl.Text = "Current autoload config: " .. AutoloadConfigName
+            end
+        end
+    end, "Current autoload config: " .. AutoloadConfigName)
+
     -- Set Initial Tab View
     activeTabBtn = mainTab
     mainTab.BackgroundTransparency = 0.2
@@ -1057,7 +1194,7 @@ local success, err = pcall(function()
     mainTab:FindFirstChildOfClass("TextLabel").TextColor3 = Color3.fromRGB(240, 230, 225)
     mainPage.Visible = true
 
-    print("[AutoFarm Script] Misc options successfully restored!")
+    print("[AutoFarm Script] Script successfully initialized with Auto Execute teleport queue!")
 end)
 
 if not success then
